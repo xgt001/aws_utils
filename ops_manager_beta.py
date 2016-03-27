@@ -22,11 +22,6 @@ def read_properties():
     parser.read('devops_creds.properties')
     secret_key = parser.get('Credentials','secret_key')
     access_key = parser.get('Credentials','access_key')
-    #global ssl_dict
-    #ssl_dict['Certificate'] = parser.get('Credentials','ssl_certificate')
-    #ssl_dict['PrivateKey'] = parser.get('Credentials','ssl_privatekey')
-    #ssl_dict['Certificate'] = parser.get('Credentials','ssl_chain')
-    #Access key is 20 char long and secret key is 40
     if (len(access_key)!=20 or len(secret_key)!=40) :
         print "ERROR: Make sure you have entered valid AWS credentials in the properties file"
         print "ERROR: Credentials invalid!"
