@@ -7,6 +7,7 @@ import boto.opsworks.layer1
 import requests
 from ConfigParser import SafeConfigParser
 import simplejson
+import datetime
 
 our_stacks = 0
 #We maintain dictionary of Stack vs Stack ID
@@ -32,6 +33,7 @@ def read_properties():
     print "Please make sure if the devops_creds.properties file exists"
     sys.exit(-1)
 
+
 #get a dictionary of Stack Name vs Stack Id's
 def prepare_stack_dict():
     access_key_value,secret_key_value=read_properties()
@@ -47,6 +49,7 @@ def prepare_stack_dict():
     print "Initiating"
     return 0
 
+
 def prepare_app_list():
     access_key_value,secret_key_value=read_properties()
     opsworks = boto.connect_opsworks(access_key_value,secret_key_value)
@@ -58,6 +61,7 @@ def prepare_app_list():
         for i in range(0,length):
             get_app_id = get_dict['Apps'][i]['AppId']
             app_id_list.append(get_app_id)
+
 
 def update_all_ssl():
     prepare_app_list()
@@ -105,6 +109,7 @@ def execute_recipes(stack_name,recipes):
         write_deployment_id.write('EXC'+str(deployment_id.values().pop())+'\n')
         write_deployment_id.close()
 
+
 #Update Custom Cookbooks globally
 def update_custom_cookbooks(stack_name=None):
     access_key_value,secret_key_value=read_properties()
@@ -133,6 +138,7 @@ def update_custom_cookbooks(stack_name=None):
         write_deployment_id = open('temp_deplist','w')
         write_deployment_id.write('UPG'+str(deployment_id.values().pop())+'\n')
         write_deployment_id.close()
+
 
 def update_all_layers(recipe,update_type=None):
     access_key_value,secret_key_value=read_properties()
@@ -205,6 +211,7 @@ def update_all_layers(recipe,update_type=None):
             print "Aborting"
             sys.exit(0)
 
+
 def update_layer(stack_name,recipe,update_type=None):
     print "DEBUG: Inside Update method"
     access_key_value,secret_key_value=read_properties()
@@ -269,6 +276,7 @@ def update_layer(stack_name,recipe,update_type=None):
             traceback.print_exc(file=sys.stdout)
     return 0
 
+
 def show_help():
     print 'OpsManager v:0.1'
     print '''CommandLine tool for AWS OpsWorks'''
@@ -305,9 +313,13 @@ def show_help():
 
     ./ops_manager.py --check-deployment-status
 
+    To Create Snapshots for all volumes:
+    ./ops_manager_beta.py --create-snapshots ap-southeast-1(us-east-1)
+
     '''
     print '''Thermonuclear!!! To update all the layers across all stacks (NOT RECOMMENDED)
     ./ops_manager.py --update-all-layers'''
+
 
 def add_parameter(stack=None):
     access_key_value,secret_key_value=read_properties()
@@ -343,6 +355,7 @@ def add_parameter(stack=None):
                 print "Couldn't find custom json field"
     return 0
 
+
 def update_stacks():
     access_key_value,secret_key_value=read_properties()
     opsworks = boto.connect_opsworks(access_key_value,secret_key_value)
@@ -372,6 +385,7 @@ def update_stacks():
         else :
             print 'Skipping Stack:' + str(our_stacks['Stacks'][i]['Name']) +' as there is no CustomJSON defined \n'
     print 'Exiting'
+
 
 def check_deployment_status():
     access_key_value,secret_key_value=read_properties()
@@ -411,6 +425,30 @@ def find_in_stack(search_string):
     if result_flag == 0:
         print "No results found."
     print 'Exiting'
+
+
+def create_snapshots(region=None):
+    access_key_value, secret_key_value = read_properties()
+    access_key_value = access_key_value.strip()
+    secret_key_value = secret_key_value.strip()
+    boto.connect_ec2(access_key_value, secret_key_value)
+    if region:
+        ec2 = boto.ec2.connect_to_region(region)
+    all_volumes = ec2.get_all_volumes()
+    all_volume_ids = []
+    for volume in all_volumes:
+        vol_id = str(volume).split(':')[1]
+        all_volume_ids.append(vol_id)
+    print len(all_volume_ids)
+    try:
+        for vol_id in all_volume_ids:
+            description = str(datetime.datetime.now())
+            description = description.split(' ')[0] + 'auto snapshot for: ' + vol_id
+            ec2.create_snapshot(vol_id, description, dry_run=False)
+            print 'Created a snapshot for:'+vol_id
+    except Exception, e:
+        print 'Sergeant, we hit a roadblock!'
+        print e
 
 
 if __name__ == '__main__':
@@ -470,6 +508,9 @@ if __name__ == '__main__':
             execute_recipes(sys.argv[2],sys.argv[3])
         elif sys.argv[1] == '--check-deployment-status':
             check_deployment_status()
+        elif sys.argv[1] == '--create-snapshots':
+            region = sys.argv[2]
+            create_snapshots(region)
         else:
             show_help()
     except IndexError:
