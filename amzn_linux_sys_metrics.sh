@@ -14,4 +14,4 @@ name=$(curl http://169.254.169.254/latest/meta-data/hostname)
 
 aws=$(which aws)
 
-aws cloudwatch put-metric-alarm --alarm-name "$name Disk 70%" --alarm-description "$name Disk 70%" --metric-name DockerHostDiskSpaceUtilization --namespace System/Linux --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold --dimensions Name=Filesystem,Value=/dev/xvda1 Name=MountPath,Value=/ Name=InstanceId,Value=$instance --evaluation-periods 1 --actions-enabled --ok-actions $notify --alarm-actions $notify --unit Percent --region ap-southeast-1
+aws cloudwatch put-metric-alarm --alarm-name "$name Disk 70%" --alarm-description "$name Disk 70%" --metric-name DiskSpaceUtilization --namespace System/Linux --statistic Average --period 300 --threshold 70 --comparison-operator GreaterThanThreshold --dimensions Name=Filesystem,Value=/dev/xvda1 Name=MountPath,Value=/ Name=InstanceId,Value=$instance --evaluation-periods 1 --actions-enabled --ok-actions $notify --alarm-actions $notify --unit Percent --region ap-southeast-1
